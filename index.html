@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notícias do Jean</title>
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .header {
+    text-align: center;
+    margin: 20px;
+    font-size: 24px;
+  }
+
+  .container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    gap: 20px;
+    padding: 20px;
+  }
+
+  .item {
+    width: calc(33% - 20px);
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .titulo {
+    padding: 10px;
+    background-color: #f0f0f0;
+    text-align: center;
+  }
+
+  .imagem {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+  }
+
+  .conteudo {
+    padding: 10px;
+    text-align: center;
+  }
+
+</style>
+</head>
+<body>
+	<div class="header">Notícias do Jean</div>
+	<div class="container" id="newsContainer">
+</div>
+
+<script>
+	let noticias = [];
+
+	document.addEventListener('DOMContentLoaded', async () => {
+		const container = document.querySelector('.container');
+		const urlIbge = "https://agenciadenoticias.ibge.gov.br/";
+
+		const resposta = await fetch('https://servicodados.ibge.gov.br/api/v3/noticias/?qtd=9').catch(erro => {
+			console.error('Ocorreu um erro com a operação Fetch:', erro);
+		});
+		
+		const json = await resposta.json();
+
+		if (resposta.status != 200)
+			throw new Error('O servidor retornou uma resposta diferente de 200...');
+		
+		// verificar no console o objeto retornado (criar paginação depois)
+		console.log(json);
+
+		// espalha o objeto da resposta items dentro do array noticias (estudar sobre operador de spread https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax)
+		noticias = [... json.items];
+
+		noticias.forEach(noticia => {
+			let objetoImagemNoticia = JSON.parse(noticia.imagens);
+
+			const item = document.createElement('div');
+			const imagem = document.createElement('img');
+			const titulo = document.createElement('div');
+			const conteudo = document.createElement('div');
+
+			item.classList.add('item');
+			item.onclick = function() {
+				window.open(noticia.link, '_blank');
+			};
+			
+			imagem.classList.add('imagem');
+			imagem.src = urlIbge + objetoImagemNoticia.image_intro;
+			imagem.alt = 'Imagem Notícia';
+
+			titulo.classList.add('titulo');
+			titulo.textContent = noticia.titulo;
+
+			conteudo.classList.add('conteudo');
+			conteudo.textContent = noticia.introducao || 'Saiba mais...';
+
+			item.appendChild(titulo);
+			item.appendChild(imagem);
+			item.appendChild(conteudo);
+			container.appendChild(item);
+		});
+	})
+</script>
+</body>
+</html>
