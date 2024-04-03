@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notícias do IBGE</title>
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .header {
+    text-align: center;
+    margin: 20px;
+    font-size: 24px;
+  }
+
+  .container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    gap: 20px;
+    padding: 20px;
+  }
+
+  .item {
+    width: calc(33% - 20px);
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .titulo {
+    padding: 10px;
+    background-color: #f0f0f0;
+    text-align: center;
+  }
+
+  .imagem {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+  }
+
+  .conteudo {
+    padding: 10px;
+    text-align: center;
+  }
+
+  .navigation, .page-counter {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+</style>
+</head>
+<body>
+	<div class="header">Notícias do IBGE</div>
+	<div class="container" id="newsContainer"></div>
+    <div class="navigation">
+        <button id="paginaAnterior" disabled>Página Anterior</button>
+        <button id="proximaPagina">Próxima Página</button>
+    </div>
+    <div class="page-counter" id="pageCounter">Página 1 de X</div>
+
+<script>
+	let noticias = [];
+    let paginaAtual = 1;
+    const noticiasPorPagina = 9;
+    let totalDePaginas;
+
+	document.addEventListener('DOMContentLoaded', async () => {
+		await carregarNoticias();
+        atualizarInterface();
+	});
+
+    async function carregarNoticias() {
+        const resposta = await fetch('https://servicodados.ibge.gov.br/api/v3/noticias/?qtd=90');
+        if (!resposta.ok) throw new Error('Falha ao buscar notícias');
+        const json = await resposta.json();
+        noticias = json.items;
+        totalDePaginas = Math.ceil(noticias.length / noticiasPorPagina);
+    }
+
+    function exibirNoticias() {
+        const container = document.querySelector('.container');
+        container.innerHTML = '';
+        const inicio = (paginaAtual - 1) * noticiasPorPagina;
+        const fim = inicio + noticiasPorPagina;
+        const noticiasPagina = noticias.slice(inicio, fim);
+
+        noticiasPagina.forEach(noticia => {
+            console.log(noticia);
+            const item = document.createElement('div');
+            item.classList.add('item');
+            item.onclick = () => window.open(noticia.link, '_blank');
+
+            const imagem = document.createElement('img');
+            imagem.classList.add('imagem');
+            imagem.src = noticia.imagem || 'icognita.png';
+            imagem.alt = 'Imagem Notícia';
+
+            const titulo = document.createElement('div');
+            titulo.classList.add('titulo');
+            titulo.textContent = noticia.titulo;
+
+            const conteudo = document.createElement('div');
+            conteudo.classList.add('conteudo');
+            conteudo.textContent = noticia.introducao || 'Saiba mais...';
+
+            item.appendChild(titulo);
+            item.appendChild(imagem);
+            item.appendChild(conteudo);
+            container.appendChild(item);
+        });
+    }
+
+    function atualizarInterface() {
+        exibirNoticias();
+        document.getElementById('paginaAnterior').disabled = paginaAtual === 1;
+        document.getElementById('proximaPagina').disabled = paginaAtual >= totalDePaginas;
+        document.getElementById('pageCounter').textContent = `Página ${paginaAtual} de ${totalDePaginas}`;
+    }
+
+    document.getElementById('proximaPagina').addEventListener('click', () => {
+        if (paginaAtual < totalDePaginas) {
+            paginaAtual++;
+            atualizarInterface();
+        }
+    });
+
+    document.getElementById('paginaAnterior').addEventListener('click', () => {
+        if (paginaAtual > 1) {
+            paginaAtual--;
+            atualizarInterface();
+        }
+    });
+</script>
+</body>
+</html>
