@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notícias do IBGE</title>
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .header {
+    text-align: center;
+    margin: 20px;
+    font-size: 24px;
+  }
+
+  .container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    gap: 20px;
+    padding: 20px;
+    display: none;
+  }
+
+  .item {
+    width: calc(33% - 20px);
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .titulo {
+    padding: 10px;
+    background-color: #f0f0f0;
+    text-align: center;
+  }
+
+  .imagem {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+  }
+
+  .conteudo {
+    padding: 10px;
+    text-align: center;
+  }
+
+  .navigation, .page-counter {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .carregando {
+    font-size: 20px;
+  }
+
+</style>
+</head>
+<body>
+	<div class="header">Notícias do IBGE</div>
+	<div class="container" id="newsContainer"></div>
+    <div class="carregando" id="carregando">Carregando Notícias...</div>
+    <div class="navigation">
+        <button id="paginaAnterior" disabled>Página Anterior</button>
+        <button id="proximaPagina">Próxima Página</button>
+    </div>
+    <div class="page-counter" id="pageCounter">Página 1 de X</div>
+
+<script>
+  let noticias = []; // Armazena as notícias carregadas
+  let paginaAtual = 1; // Controla a página atual de visualização
+  const noticiasPorPagina = 9; // Define o número de notícias por página
+  let totalDePaginas; // Armazena o total de páginas disponíveis
+  const urlIbge = "https://agenciadenoticias.ibge.gov.br/";
+  let paginacao = {
+    count: 0,
+    nextPage: 1,
+    page: 1,
+    previousPage: 0,
+    showingFrom: 1,
+    showingTo: 1,
+    totalPages: 1,
+  };
+
+  // Carrega as notícias do IBGE ao iniciar a página
+	document.addEventListener('DOMContentLoaded', async () => {
+		await carregarNoticias();
+    atualizarInterface();
+    
+	});
+
+  // Função para carregar notícias da API do IBGE
+    async function carregarNoticias() {
+        const resposta = await fetch('https://servicodados.ibge.gov.br/api/v3/noticias/?qtd=27');
+        if (!resposta.ok) throw new Error('Falha ao buscar notícias');
+        const json = await resposta.json();
+        noticias = json.items;
+        console.log(json);
+        totalDePaginas = Math.ceil(noticias.length / noticiasPorPagina);
+
+    }
+
+  // Exibe as notícias na página, baseando-se na paginação
+    function exibirNoticias() {
+        const container = document.querySelector('.container');
+        const carregando = document.getElementById('carregando');
+        container.innerHTML = '';
+        noticias.slice((paginaAtual - 1) * noticiasPorPagina, paginaAtual * noticiasPorPagina).forEach(noticia => {
+
+          let objetoImagemNoticia = JSON.parse(noticia.imagens);
+
+            const item = document.createElement('div');
+            item.classList.add('item');
+            item.onclick = () => window.open(noticia.link, '_blank');
+
+            const titulo = document.createElement('div');
+            titulo.classList.add('titulo');
+            titulo.textContent = noticia.titulo;
+
+            const imagem = document.createElement('img');
+            imagem.classList.add('imagem');
+				    imagem.src = urlIbge + objetoImagemNoticia.image_intro;
+				    imagem.alt = 'Imagem Notícia';
+
+            const conteudo = document.createElement('div');
+            conteudo.classList.add('conteudo');
+            conteudo.textContent = noticia.introducao || 'Saiba mais...';
+
+            item.appendChild(titulo);
+            item.appendChild(imagem);
+            item.appendChild(conteudo);
+            container.appendChild(item);
+        });
+
+        carregando.style.display = 'none';
+        container.style.display = 'flex';
+
+    }
+
+  // Atualiza a interface do usuário, incluindo a paginação e a exibição das notícias
+    function atualizarInterface() {
+        exibirNoticias();
+        document.getElementById('paginaAnterior').disabled = paginaAtual === 1;
+        document.getElementById('proximaPagina').disabled = paginaAtual >= totalDePaginas;
+        document.getElementById('pageCounter').textContent = `Página ${paginaAtual} de ${totalDePaginas}`;
+    }
+    
+  // Navegação para a página anterior e próxima
+    document.getElementById('proximaPagina').addEventListener('click', () => {
+        if (paginaAtual < totalDePaginas) {
+            paginaAtual++;
+            atualizarInterface();
+        }
+    });
+
+    document.getElementById('paginaAnterior').addEventListener('click', () => {
+        if (paginaAtual > 1) {
+            paginaAtual--;
+            atualizarInterface();
+
+        }
+    });
+
+    
+</script>
+</body>
+</html>
