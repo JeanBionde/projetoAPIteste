@@ -79,11 +79,10 @@
     <div class="page-counter" id="pageCounter">Página 1 de X</div>
 
 <script>
-  let noticias = []; // Armazena as notícias carregadas
-  let paginaAtual = 1; // Controla a página atual de visualização
-  const noticiasPorPagina = 9; // Define o número de notícias por página
-  let totalDePaginas; // Armazena o total de páginas disponíveis
+  const API = "https://servicodados.ibge.gov.br/api/v3/noticias/";
   const urlIbge = "https://agenciadenoticias.ibge.gov.br/";
+  const noticiasPorPagina = 9; // Define o número de notícias por página
+  
   let paginacao = {
     count: 0,
     nextPage: 1,
@@ -96,84 +95,76 @@
 
   // Carrega as notícias do IBGE ao iniciar a página
 	document.addEventListener('DOMContentLoaded', async () => {
-		await carregarNoticias();
-    atualizarInterface();
-    
+		await atualizarInterface(paginacao.page);
 	});
 
   // Função para carregar notícias da API do IBGE
-    async function carregarNoticias() {
-        const resposta = await fetch('https://servicodados.ibge.gov.br/api/v3/noticias/?qtd=27');
+    async function carregarNoticias(pagina) {
+        const resposta = await fetch(`${API}?qtd=${noticiasPorPagina}&page=${pagina}`);
+        
         if (!resposta.ok) throw new Error('Falha ao buscar notícias');
-        const json = await resposta.json();
-        noticias = json.items;
-        console.log(json);
-        totalDePaginas = Math.ceil(noticias.length / noticiasPorPagina);
-
+        
+        paginacao = { ... await resposta.json() };
+        console.log(paginacao);
     }
 
   // Exibe as notícias na página, baseando-se na paginação
-    function exibirNoticias() {
+    function exibirNoticias(pagina) {
         const container = document.querySelector('.container');
         const carregando = document.getElementById('carregando');
         container.innerHTML = '';
-        noticias.slice((paginaAtual - 1) * noticiasPorPagina, paginaAtual * noticiasPorPagina).forEach(noticia => {
+
+        paginacao.items.forEach(noticia => {
 
           let objetoImagemNoticia = JSON.parse(noticia.imagens);
 
-            const item = document.createElement('div');
-            item.classList.add('item');
-            item.onclick = () => window.open(noticia.link, '_blank');
+          const item = document.createElement('div');
+          item.classList.add('item');
+          item.onclick = () => window.open(noticia.link, '_blank');
 
-            const titulo = document.createElement('div');
-            titulo.classList.add('titulo');
-            titulo.textContent = noticia.titulo;
+          const titulo = document.createElement('div');
+          titulo.classList.add('titulo');
+          titulo.textContent = noticia.titulo;
 
-            const imagem = document.createElement('img');
-            imagem.classList.add('imagem');
-				    imagem.src = urlIbge + objetoImagemNoticia.image_intro;
-				    imagem.alt = 'Imagem Notícia';
+          const imagem = document.createElement('img');
+          imagem.classList.add('imagem');
+          imagem.src = urlIbge + objetoImagemNoticia.image_intro;
+          imagem.alt = 'Imagem Notícia';
 
-            const conteudo = document.createElement('div');
-            conteudo.classList.add('conteudo');
-            conteudo.textContent = noticia.introducao || 'Saiba mais...';
+          const conteudo = document.createElement('div');
+          conteudo.classList.add('conteudo');
+          conteudo.textContent = noticia.introducao || 'Saiba mais...';
 
-            item.appendChild(titulo);
-            item.appendChild(imagem);
-            item.appendChild(conteudo);
-            container.appendChild(item);
+          item.appendChild(titulo);
+          item.appendChild(imagem);
+          item.appendChild(conteudo);
+          container.appendChild(item);
         });
 
         carregando.style.display = 'none';
         container.style.display = 'flex';
-
     }
 
   // Atualiza a interface do usuário, incluindo a paginação e a exibição das notícias
-    function atualizarInterface() {
-        exibirNoticias();
-        document.getElementById('paginaAnterior').disabled = paginaAtual === 1;
-        document.getElementById('proximaPagina').disabled = paginaAtual >= totalDePaginas;
-        document.getElementById('pageCounter').textContent = `Página ${paginaAtual} de ${totalDePaginas}`;
+    async function atualizarInterface(pagina) {
+        await carregarNoticias(pagina);
+        document.getElementById('paginaAnterior').disabled = paginacao.previousPage < 1;
+        document.getElementById('proximaPagina').disabled = paginacao.nextPage == paginacao.totalPages;
+        document.getElementById('pageCounter').textContent = `Página ${pagina} de ${paginacao.totalPages}`;
+
+        exibirNoticias(pagina);
     }
     
   // Navegação para a página anterior e próxima
-    document.getElementById('proximaPagina').addEventListener('click', () => {
-        if (paginaAtual < totalDePaginas) {
-            paginaAtual++;
-            atualizarInterface();
-        }
+    document.getElementById('proximaPagina').addEventListener('click', evento => {
+        evento.preventDefault();
+        atualizarInterface(paginacao.nextPage);
     });
 
-    document.getElementById('paginaAnterior').addEventListener('click', () => {
-        if (paginaAtual > 1) {
-            paginaAtual--;
-            atualizarInterface();
-
-        }
+    document.getElementById('paginaAnterior').addEventListener('click', evento => {
+        evento.preventDefault();
+        atualizarInterface(paginacao.previousPage);
     });
-
-    
 </script>
 </body>
 </html>
