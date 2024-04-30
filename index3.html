@@ -11,21 +11,63 @@
             background-color: #e9ecef;
             border-color: #dee2e6;
         }
+        /* Centralizar spinner */
+        #carregando {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
     </style>
 </head>
 <body>
 <div class="container py-4">
     <h1 class="text-center mb-4">Notícias do IBGE</h1>
-
-    <div class="row" id="newsContainer" style="display:none;"></div>
-
-    <div class="d-flex justify-content-center">
-        <div class="spinner-border text-primary" role="status" id="carregando">
+    
+    <!-- Offcanvas -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasExample" aria-labelledby="offcanvasExampleLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="offcanvasExampleLabel">Configurações da página</h5>
+            <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="quantidadeNoticias" id="radio9" value="9" checked>
+                <label class="form-check-label" for="radio9">
+                    9
+                </label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="quantidadeNoticias" id="radio18" value="18">
+                <label class="form-check-label" for="radio18">
+                    18
+                </label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="quantidadeNoticias" id="radio27" value="27">
+                <label class="form-check-label" for="radio27">
+                    27
+                </label>
+            </div>
+            <button type="button" class="btn btn-primary mt-3" onclick="definirQuantidade()">Definir</button>
+            <div class="alert alert-success mt-3" id="definido" style="display: none;">Padrão definido!</div>
+        </div>
+    </div>
+    
+    <!-- Botão para acionar offcanvas -->
+    <button class="btn btn-primary position-fixed top-0 end-0 mt-2 me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasExample" aria-controls="offcanvasExample">
+        Configurações da página
+    </button>
+    
+    <!-- Spinner -->
+    <div class="d-flex justify-content-center" id="carregando">
+        <div class="spinner-border text-primary" role="status">
             <span class="visually-hidden">Carregando...</span>
         </div>
     </div>
 
-    <nav aria-label="Page navigation">
+    <!-- Navegação de página -->
+    <nav aria-label="Page navigation" class="mt-3">
         <ul class="pagination justify-content-center">
             <li class="page-item">
                 <button class="page-link" id="paginaAnterior" disabled>Página Anterior</button>
@@ -42,12 +84,16 @@
             </li>
         </ul>
     </nav>
+    
+    <!-- Container de notícias -->
+    <div class="row" id="newsContainer" style="display:none;"></div>
 </div>
 
 <script>
     const API = "https://servicodados.ibge.gov.br/api/v3/noticias/";
     const urlIbge = "https://agenciadenoticias.ibge.gov.br/";
-    const noticiasPorPagina = 9;
+    let noticiasPorPagina = 9; // Alterado dinamicamente
+    const noticiasPorPaginaDefault = 9; // Valor padrão
 
     let paginacao = {
         count: 0,
@@ -61,14 +107,14 @@
 
     document.addEventListener("DOMContentLoaded", async () => {
         await atualizarInterface(paginacao.page);
-        console.log(paginacao);
+        //console.log(paginacao);
     });
 
     async function carregarNoticias(pagina) {
         const resposta = await fetch(`${API}?qtd=${noticiasPorPagina}&page=${pagina}`);
         if (!resposta.ok) throw new Error("Falha ao buscar notícias");
         paginacao = await resposta.json();
-        console.log(paginacao);
+        //console.log(paginacao);
         atualizarDropdown(paginacao.totalPages);  // Atualiza o dropdown sempre que as notícias são carregadas
     }
 
@@ -145,6 +191,20 @@
     document.getElementById("paginaAnterior").addEventListener("click", () => {
         atualizarInterface(paginacao.previousPage);
     });
+    
+    function definirQuantidade() {
+        const radios = document.getElementsByName('quantidadeNoticias');
+        radios.forEach(radio => {
+            if (radio.checked) {
+                noticiasPorPagina = parseInt(radio.value);
+                atualizarInterface(paginacao.page);
+                document.getElementById("definido").style.display = "block"; // Exibe o alerta de sucesso
+                setTimeout(() => {
+                    document.getElementById("definido").style.display = "none"; // Oculta o alerta após 2 segundos
+                }, 2000);
+            }
+        });
+    }
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
